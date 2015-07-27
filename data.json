@@ -1,0 +1,13 @@
+{
+"costs": [
+  {"legendLabel":"the rent", "magnitude":136, "tag":"oncost"},
+  {"legendLabel":"net+server", "magnitude":19, "tag":"investment"},
+  {"legendLabel":"power", "magnitude":19, "tag":"oncost"},
+  {"legendLabel":"water", "magnitude":7, "tag":"oncost"},
+  {"legendLabel":"new lab stuff", "magnitude":55, "tag":"investment"},
+  {"legendLabel":"drink water", "magnitude":16, "tag":"oncost"},
+  {"legendLabel":"food", "magnitude":136, "tag":"oncost"},
+  {"legendLabel":"notropics", "magnitude":22, "tag":"investment"},
+  {"legendLabel":"household", "magnitude":7, "tag":"oncost"}
+  ] 
+}

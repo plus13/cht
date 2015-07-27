@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+  <head>    
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <META HTTP-EQUIV="refresh" CONTENT="2">
+    <title>Testing Pie Chart</title>
+
+    <script type="text/javascript" src="d3.v2.js"></script>
+
+    <!-- Source for example located at: http://bl.ocks.org/1203641 -->
+
+    <style type="text/css">
+        .slice text {
+            font-size: 14pt;
+            font-weight: bold;
+            font: sans-serif;
+        }   
+    </style>
+  </head>
+  <body>
+    <script type="text/javascript">
+
+var data; // a global
+
+d3.json("./data.json", function(json) {
+  data = json;
+
+  // Try to sort the dataset to appear in an eye ergonomic way
+  function ergonomicSort(dataSet){
+	  maxToMin = dataSet.sort(function(a, b){
+              return b.magnitude - a.magnitude;
+          });
+	  helpArray1 = [];
+	  helpArray2 = [];
+	  helperSwitch = 0;
+	  for (i = 0; i < maxToMin.length; i++) { 
+	      if (helperSwitch == 0) {
+	          helpArray1.push(maxToMin[i]);
+		  helperSwitch = 1;
+	      } else {
+	          helpArray2.push(maxToMin[i]);
+		  helperSwitch = 0;
+	      };
+	  };
+	  ergoArray = helpArray1.concat(helpArray2);
+	  return ergoArray
+  };
+
+      // the angle of the middle of the first pie piece to the horizontal center
+      // NOTE: this is not used at the moment, and maybe not working
+      function bigPieceShift() {
+	      angle =(-dataSet[0].magnitude / (total*2)) *360;
+	return angle;
+      };
+
+  var dataSet = ergonomicSort(data.costs);
+
+  console.log(typeof dataSet.magnitude)
+
+  var total= d3.sum(data.costs, function(d){return d.magnitude;});
+
+
+    var canvasWidth = 600, //width
+      canvasHeight = canvasWidth,   //height
+      outerRadius = canvasWidth/2.2,   //radius
+      color1 = "#ccff00",
+      color2 = "#333333",
+      color3 = "#ccff00",
+      colorrange = ["rgba(255,255,255,0.5)", color1],
+      // color = d3.scale.category20(); //builtin range of colors
+      //random color
+      color = function(i) { return colorrange[Math.floor(Math.random()*colorrange.length)]; }
+     // color = function(d) { 
+     //         if(d.data.tag=="investment") {
+     //   	  chcolor = colorrange[0]; 
+     //         } else {
+     //   	  chcolor = colorrange[1]; 
+     //         };
+     //         return chcolor;
+     // };
+    console.log(dataSet)
+
+
+
+
+
+    
+    var vis = d3.select("body")
+      .append("svg:svg") //create the SVG element inside the <body>
+        .data([dataSet]) //associate our data with the document
+        .attr("width", canvasWidth) //set the width of the canvas
+        .attr("height", canvasHeight) //set the height of the canvas
+        .append("svg:g") //make a group to hold our pie chart
+          .attr("transform", "translate(" + 1.1*outerRadius + "," + 1.1*outerRadius + ")") // relocate center of pie to 'outerRadius,outerRadius'
+
+    // This will create <path> elements for us using arc data...
+    var arc = d3.svg.arc()
+      .outerRadius(outerRadius);
+
+    var pie = d3.layout.pie() //this will create arc data for us given a list of values
+      .value(function(d) { return d.magnitude; }) // Binding each value to the pie
+      .sort( function(d) { return null; } );
+
+    // Select all <g> elements with class slice (there aren't any yet)
+    var arcs = vis.selectAll("g.slice")
+      // Associate the generated pie data (an array of arcs, each having startAngle,
+      // endAngle and value properties) 
+      .data(pie)
+      // This will create <g> elements for every "extra" data element that should be associated
+      // with a selection. The result is creating a <g> for every object in the data array
+      .enter()
+      // Create a group to hold each slice (we will have a <path> and a <text>
+      // element associated with each slice)
+      .append("svg:g")
+      .attr("transform", function(d) { return "rotate("+(-dataSet[0].magnitude /(total*2)) *360+")"; } )
+      .attr("class", "slice");    //allow us to style things in the slices (like text)
+
+    arcs.append("svg:path")
+      //set the color for each slice to be chosen from the color function defined above
+	    .attr("fill", function(d, i) { if(d.data.tag=="investment"){return colorrange[1];}else{return colorrange[0];}; } )
+      .attr("stroke", color2 )
+      .attr("stroke-width", 2)
+      //this creates the actual SVG path using the associated data (pie) with the arc drawing function
+      .attr("d", arc);
+
+    // Add a legendLabel to each arc slice...
+    arcs.append("svg:text")
+      .attr("transform", function(d) { //set the label's origin to the center of the arc
+        //we have to make sure to set these before calling arc.centroid
+        d.outerRadius = outerRadius + 10; // Set Outer Coordinate
+        d.innerRadius = outerRadius + 2; // Set Inner Coordinate
+        return "translate(" + arc.centroid(d) + ")rotate(" + angle2(d) + ")";
+      })
+      .attr("text-anchor", "middle") //center the text on it's origin
+      .style("fill", color2)
+      // .style("font", "bold 12px Arial")
+      .text(function(d, i) { return d3.round(100*dataSet[i].magnitude / total) + "%" ; }); //get the label from our original data array
+
+// helper function
+function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+  var angleInRadians = angleInDegrees * Math.PI / 180.0;
+  var x = centerX + radius * Math.cos(angleInRadians);
+  var y = centerY + radius * Math.sin(angleInRadians);
+  return [x,y];
+}
+
+    // Add a magnitude value to the larger arcs, translated to the arc centroid and rotated.
+    arcs.filter(function(d) { return d.endAngle - d.startAngle > .2; }).append("svg:text")
+      //.attr("dy", ".35em")
+      //.attr("dx", "20px")
+      //.attr("text-anchor", "middle")
+      //.attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")rotate(" + angle(d) + ")"; })
+    
+      .attr("transform", function(d) { //set the label's origin to the center of the arc
+        //we have to make sure to set these before calling arc.centroid
+        d.outerRadius = outerRadius; // Set Outer Coordinate
+        d.innerRadius = outerRadius; // Set Inner Coordinate
+        // return "translate(" + arc.centroid(d) + ")rotate(" + angle(d) + ")";
+	//if(radToDegree(d.startAngle)==0){
+	console.log(radToDegree(d.startAngle));
+
+    function angle(d) {
+      var a = (d.startAngle + d.startAngle) * 90 / Math.PI +90;
+      // var a = (d.startAngle + d.endAngle) * 90 / Math.PI + 90;
+      //return a > 90 ? a - 180 : a;
+      return a;
+    }
+
+    function angle3(d) {
+      var a = (d.startAngle + d.startAngle) * 90 / Math.PI +270;
+      // var a = (d.startAngle + d.endAngle) * 90 / Math.PI + 90;
+      //return a > 90 ? a - 180 : a;
+      return a;
+    }
+	      //if(radToDegree(d.startAngle)==0){
+	      if(radToDegree(d.startAngle)!=0 && radToDegree(d.startAngle)< 180 -bigPieceShift()){
+        return "translate(" + polarToCartesian(0,0,outerRadius-5,d.startAngle/Math.PI*180. +274.) + ")rotate(" + angle3(d) + ")";
+	}else{
+        return "translate(" + polarToCartesian(0,0,outerRadius-5,d.startAngle/Math.PI*180. +271.) + ")rotate(" + angle(d) + ")";
+	}
+      })
+      .style("fill", color2)
+      // .style("font", "bold 12px Arial")
+
+
+      .attr("text-anchor", function(d) {
+	      if(radToDegree(d.startAngle)!=0 && radToDegree(d.startAngle)< 180 -bigPieceShift()){
+		      console.log(-bigPieceShift());
+		      return "end";
+	      }else{
+		      return "start";}
+      })
+      .text(function(d) { return d.data.magnitude + "€ " + d.data.legendLabel; })
+      //.style("fill", color2);
+
+
+    // Computes the angle of an arc, converting from radians to degrees.
+    function angle(d) {
+      var a = (d.startAngle + d.startAngle) * 90 / Math.PI +90;
+      // var a = (d.startAngle + d.endAngle) * 90 / Math.PI + 90;
+      //return a > 90 ? a - 180 : a;
+      return a;
+    }
+
+    function angle2(d) {
+      var a = (d.startAngle + d.endAngle) * 90 / Math.PI;
+      // var a = (d.startAngle + d.endAngle) * 90 / Math.PI + 90;
+      //return a > 90 ? a - 180 : a;
+      return a;
+    }
+
+    function angle3(d) {
+      var a = (d.startAngle + d.startAngle) * 90 / Math.PI +270;
+      // var a = (d.startAngle + d.endAngle) * 90 / Math.PI + 90;
+      //return a > 90 ? a - 180 : a;
+      return a;
+    }
+
+   function radToDegree(rad) {
+	   return 360*(rad)/ (3.141 * 2);
+   };
+
+});
+
+        
+    </script>
+  </body>
+</html>
